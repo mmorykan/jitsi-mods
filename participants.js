@@ -9,12 +9,13 @@ const play = document.querySelector(".play");
 const stop = document.querySelector(".stop");
 const audioPlayers = document.getElementsByClassName("audio-object");
 
-function createParticipant(username, x, y, avatar) {
+function createParticipant(username, x, y, avatar, audioFile) {
     return {
         username,
         x,
         y,
         avatar,
+        audioFile,
         panner: makePanner()
     }
 }
@@ -44,9 +45,9 @@ function createParticipant(username, x, y, avatar) {
 // listener.setPosition(participant1["x"], participant1["y"], DEPTH); // Set initial position of listener 
 // participants.push(participant1, participant2, participant3);
 participants.push(
-    createParticipant("marktheassassin", 100, 100, "./Photos/PatrickStar.jpg"),
-    createParticipant("matt", 150, 100, "./Photos/ExtremelyImportant.png"),
-    createParticipant("riley", 200, 100, "./Photos/Big Yoshi.png")
+    createParticipant("marktheassassin", 100, 100, "./Photos/PatrickStar.jpg", "Sounds/1985.mp3"),
+    createParticipant("matt", 150, 100, "./Photos/ExtremelyImportant.png", "Sounds/Broken Heart.mp3"),
+    createParticipant("riley", 200, 100, "./Photos/Big Yoshi.png", "Sounds/The Middle.mp3")
 )
 listener.setPosition(participants[0].x, participants[0].y, DEPTH);
 
@@ -103,13 +104,13 @@ function createAvatar(element, participant) {
     element.style.top = getPosition(participant)[1] + "px";
 }
 
-function setAudioFile(participant, audioFile) {
-    participant["audioFile"] = audioFile;
-}
+// function setAudioFile(participant, audioFile) {
+//     participant["audioFile"] = audioFile;
+// }
 
-function getAudioFile(participant){
-    return participant["audioFile"];
-}
+// function getAudioFile(participant){
+//     return participant["audioFile"];
+// }
 
 function makePanner() {
     // Return a new panner object
@@ -167,58 +168,92 @@ function dragElement(element, participant) {
     }
 }
 
+// Fix audio to xmlhttprequest
 function getData(participant) {
     // Connect panner and start audio file
-    const panner = participant["panner"];
-    var reader = new FileReader();
+    // const panner = participant["panner"];
+    // var reader = new FileReader();
 
-    reader.addEventListener("load", event => {
+    // reader.addEventListener("load", event => {
 
-        audioContext.decodeAudioData(event.target.result, buffer => {
-            var source = audioContext.createBufferSource();
-            source.buffer = buffer;
+    //     audioContext.decodeAudioData(event.target.result, buffer => {
+    //         var source = audioContext.createBufferSource();
+    //         source.buffer = buffer;
 
-            source.connect(panner);
-            panner.connect(audioContext.destination);
+    //         source.connect(panner);
+    //         panner.connect(audioContext.destination);
 
-            source.start(0);
-        });
+    //         source.start(0);
+    //     });
         
-    });
+    // });
     
-    reader.readAsArrayBuffer(getAudioFile(participant).files[0]);
+    // reader.readAsArrayBuffer(getAudioFile(participant).files[0]);
+
+
+    source = audioContext.createBufferSource();
+    const panner = participant.panner;
+    request = new XMLHttpRequest();
+
+    request.open('GET', getAudioStream(participant), true);
+    console.log(getAudioStream(participant));
+
+    request.responseType = 'arraybuffer';
+
+    request.addEventListener("load", () => {
+
+        // let audioData = request.response;
+        // console.log(request);
+        // console.log(request.response);
+        // console.log(audioData);
+        audioContext.decodeAudioData(request.response, (buffer) => {
+        // let myBuffer = buffer;
+        source.buffer = buffer;
+        console.log(source);
+
+        source.connect(panner);
+        panner.connect(audioContext.destination);
+        // console.log(source);
+        // positionPanner();
+        // source.loop = true;
+
+        source.start(0);
+        });
+    });
+
+    request.send();
 }
 
 play.addEventListener("click", () => {
 
-    const audioFiles = document.getElementsByClassName("audioFile");
+    // const audioFiles = document.getElementsByClassName("audioFile");
 
     // Need try catch if one of the files is empty for browsers other than Safari
-    for (var i = 0; i < participants.length; i ++) {
-        createAvatar(audioPlayers[i], participants[i]);
-        setAudioFile(participants[i], audioFiles[i]);
-        dragElement(audioPlayers[i], participants[i]);
-        getData(participants[i]);
-    }
+    // for (var i = 0; i < participants.length; i ++) {
+    //     createAvatar(audioPlayers[i], participants[i]);
+    //     // setAudioFile(participants[i], audioFiles[i]);
+    //     dragElement(audioPlayers[i], participants[i]);
+    //     getData(participants[i]);
+    // }
+
+
+
+
+    createAvatar(audioPlayers[0], participants[0]);
+    // setAudioFile(participant, audioFiles[0]);
+    dragElement(audioPlayers[0], participants[0]);
+    getData(participants[0]);
+
+
+    createAvatar(audioPlayers[1], participants[1]);
+    // setAudioFile(participant2, audioFiles[1]);
+    dragElement(audioPlayers[1], participants[1]);
+    getData(participants[1]);
+
+
+    createAvatar(audioPlayers[2], participants[2]);
+    // setAudioFile(participant3, audioFiles[2]);
+    dragElement(audioPlayers[2], participants[2]);
+    getData(participants[2]);
 
 });
-
-
-    // createAvatar(audioPlayers[0], participant1);
-    // setAudioFile(participant1, audioFiles[0]);
-    // dragElement(audioPlayers[0], participant1);
-    // getData(participant1);
-
-
-    // createAvatar(audioPlayers[1], participant2);
-    // setAudioFile(participant2, audioFiles[1]);
-    // dragElement(audioPlayers[1], participant2);
-    // getData(participant2);
-
-
-    // createAvatar(audioPlayers[2], participant3);
-    // setAudioFile(participant3, audioFiles[2]);
-    // dragElement(audioPlayers[2], participant3);
-    // getData(participant3);
-
-

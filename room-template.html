@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>HelloWorld | Gather Conference</title>
+    <style>
+      body { margin: 0; }
+      #jitsi-meet { position: absolute; width: 100%; height: 100%; }
+    </style>
+    <script src='https://jitsi.coderforlife.com/libs/lib-jitsi-meet.min.js'></script>
+    <script src='https://jitsi.coderforlife.com/external_api.js'></script>
+  </head>
+  <body>
+    <div id="jitsi-meet"></div>
+    <script>
+      ///////// Events for overall conference /////////
+      function onConferenceJoined(roomName, id, displayName, avatarURL) {
+        // called when the local user successfully joins the conference
+        // the id is the local participant's id
+        console.log("onConferenceJoined", roomName, id, displayName, avatarURL);
+        document.title = roomName + " | Gather Conference";
+      }
+      function onConferenceReadyToBeClosed() {
+        // called when about to leave call, probably should shutdown audio here
+        console.log("onConferenceReadyToBeClosed");
+      }
+      function onConferenceLeft(roomName) {
+        // called when conference fully shutdown, maybe this is where audio is cut
+        console.log("onConferenceLeft", roomName);
+      }
+
+
+      ///////// Events for participants /////////
+      function onParticipantJoined(participantId, name) {
+        // called when a remote participant joins
+        console.log("onParticipantJoined", participantId, name);
+      }
+      function onParticipantLeft(participantId) {
+        // called when a remote participant leaves
+        console.log("onParticipantLeft", participantId);
+      }
+      function onDominantSpeakerChanged(participantId) {
+        // called when the dominant participant speaker changes
+        console.log("onDominantSpeakerChanged", participantId);
+      }
+      function onParticipantNameChanged(participantId, name) {
+        // called when any participant changes their name
+        console.log("onParticipantNameChanged", participantId, name);
+      }
+      function onParticipantAvatarChanged(participantId, avatarURL) {
+        // called when any participant changes their avatar
+        console.log("onParticipantAvatarChanged", participantId, avatarURL);
+      }
+      function onParticipantAudioLevelChanged(participantId, audioLevel) {
+        // called when any participant's audio level changes
+        // this fires all the time: console.log("onParticipantAudioLevelChanged", participantId, audioLevel);
+      }
+      function onParticipantRoleChanged(participantId, role) {
+        // called when any participant's role changes (i.e. to moderator)
+        console.log("onParticipantRoleChanged", participantId, role);
+      }
+      function onParticipantStatusChanged(participantId, status) {
+        // called when any participant's status changes (I have no idea what status is used for)
+        console.log("onParticipantStatusChanged", participantId, status);
+      }
+      function onParticipantAudioMuteChanged(participantId, muted) {
+        // called when any participant's audio is muted/unmuted
+        console.log("onParticipantAudioMuteChanged", participantId, muted);
+      }
+      function onParticipantVideoMuteChanged(participantId, muted) {
+        // called when any participant's video is muted/unmuted
+        console.log("onParticipantVideoMuteChanged", participantId, muted);
+      }
+      function onParticipantAudioTrackAdded(track) {
+        // called when any participant adds an audio track
+        // track methods:
+        //    track.getParticipantId()  gets the participant's id
+        //    track.getOriginalStream() gets the MediaStream object
+        //    track.getTrack()          gets the MediaStreamTrack object
+        //    track.isLocal()           gets if the track is a local track
+        //    track.isMuted()           gets if the track is currently muted
+        //    track.audioLevel          the audio level of the stream
+        console.log("onParticipantAudioTrackAdded", track);
+      }
+      function onParticipantAudioTrackRemoved(track) {
+        // called when any participant removes an audio track
+        console.log("onParticipantAudioTrackRemoved", track);
+      }
+      function onParticipantLocationChanged(participantId, location) {
+        // called when any participant's location changes
+        console.log("onParticipantLocationChanged", participantId, location);
+      }
+      function onParticipantPAChanged(participantId, enabled) {
+        // called when any participant's PA property changes
+        console.log("onParticipantPAChanged", participantId, enabled);
+      }
+      function onParticipantOmnilistenChanged(participantId, enabled) {
+        // called when any participant's omnilisten property changes
+        console.log("onParticipantOmnilistenChanged", participantId, enabled);
+      }
+      function onParticipantRaisedHandChanged(participantId, handRaised) {
+        // called when any participant's raised-hand property changes
+        console.log("onParticipantRaisedHandChanged", participantId, handRaised);
+      }
+
+
+      ///////// Useful Functions /////////
+      function getLocalParticipantID() { return api._myUserID; }
+      function getAllParticipantIDs() { return Object.keys(api._participants); }
+      function getNumParticipants() { return api.getNumberOfParticipants(); }
+      function getApp() { return api.getIFrame().contentWindow.APP; }
+      function getConference() { return getApp().conference; } // the JitsiMeet conference object
+      function getJitsiConference() { return getApp().store.getState()["features/base/conference"].conference; } // the lib-jitsi-meet JitsiConference object
+
+
+      ///////// Property Functions /////////
+      // Properties:
+      //    location:   value is an array of the x and y coordinates like [5,6]
+      //    pa:         value is a boolean, true if the user can be heard by all others equally
+      //    omnilisten: value is a boolean, true if the user can be hear all others equally
+      //    raisedHand: value is a boolean, true if the user's hand is raised (provided by Jitsi Meet)
+      function getParticipantBooleanProperty(participantId, name) {
+        // default is false
+        if (getLocalParticipantID() === participantId) {
+          return getJitsiConference().getLocalParticipantProperty(name);
+        } else {
+          return getConference().getParticipantById(participantId).getProperty(name) === "true";
+        }
+      }
+      function getParticipantNumericArrayProperty(participantId, name) {
+        if (getLocalParticipantID() === participantId) {
+          return getJitsiConference().getLocalParticipantProperty(name);
+        } else {
+          return getConference().getParticipantById(participantId).getProperty(name).split(",").map(x=>+x);
+        }
+      }
+      function setParticipantProperty(participantId, name, value) {
+        const jc = getJitsiConference();
+        if (getLocalParticipantID() === participantId) {
+          const oldValue = jc.getLocalParticipantProperty(name);
+          jc.setLocalParticipantProperty(name, value);
+          jc.eventEmitter.emit(
+            JitsiMeetJS.events.conference.PARTICIPANT_PROPERTY_CHANGED,
+            null, name, oldValue+"", value+"");
+        } else if (jc.isModerator()) {
+          jc.sendCommandOnce('jitsi_force_participant_property',
+            {attributes:{participantId:participantId,name:name},value:value});
+        } else {
+          console.warn("Cannot set a remote participant's properties unless you are the moderator");
+        }
+      }
+
+
+      ///////// Participant Class /////////
+      // In general, this class should not be used, just change things in the display whenever there is a change in a property
+      // One exception is during the initial setup not all information about the participants is announced to the listeners
+      class Participant {
+        constructor(participantId) {
+          this.participantId = participantId;
+          this.isLocal = getLocalParticipantID() === participantId;
+          if (!this.isLocal) {
+            this.jp = getConference().getParticipantById(participantId); // the JitsiParticpant object
+          }
+        }
+        get name() { return api.getDisplayName(this.participantId); }
+        get avatar() { return api.getAvatarURL(this.participantId); }
+        get isAudioMuted() { return this.isLocal ? getConference().isLocalAudioMuted() : this.jp.isAudioMuted(); }
+        get audioLevel() { return __getAudioLevel(this.isLocal ? getJitsiConference().getTracks() : this.jp.getTracks()); }
+        get isVideoMuted() { return this.isLocal ? getConference().isLocalVideoMuted() : this.jp.isVideoMuted(); }
+        get isModerator() { return this.isLocal ? getJitsiConference().isModerator() : this.jp.isModerator(); }
+        get hasHandRaised() { return getParticipantBooleanProperty(this.participantId, "raisedHand"); }
+        get location() { return getParticipantNumericArrayProperty(this.participantId, "location"); }
+        set location(xy) { setParticipantProperty(this.participantId, "location", xy); }
+        get pa() { return getParticipantBooleanProperty(this.participantId, "pa"); }
+        set pa(value) { setParticipantProperty(this.participantId, "pa", value); }
+        get omnilisten() { return getParticipantBooleanProperty(this.participantId, "omnilisten"); }
+        set omnilisten(value) { setParticipantProperty(this.participantId, "omnilisten", value); }
+      }
+      // utility functions
+      function __getAudioLevel(tracks) {
+        return tracks.reduce((al, track) => Math.max(al, track.getType() === "audio" ? track.audioLevel : 0), 0);
+      }
+
+      function onJitsiLoad() {
+        api.addListener('videoConferenceJoined', function(args) { // CONFERENCE_JOINED but this has parameters (and can be added before the JC exists)
+          let {roomName, id, displayName, avatarURL} = args;
+          let jc = getJitsiConference();
+          jc.addEventListener(JitsiMeetJS.events.conference.DISPLAY_NAME_CHANGED, onParticipantNameChanged);
+          jc.addEventListener(JitsiMeetJS.events.conference.DOMINANT_SPEAKER_CHANGED, onDominantSpeakerChanged);
+          jc.addEventListener(JitsiMeetJS.events.conference.TRACK_AUDIO_LEVEL_CHANGED, onParticipantAudioLevelChanged);
+          jc.addEventListener(JitsiMeetJS.events.conference.USER_ROLE_CHANGED, onParticipantRoleChanged);
+          jc.addEventListener(JitsiMeetJS.events.conference.USER_STATUS_CHANGED, onParticipantStatusChanged);
+          jc.addEventListener(JitsiMeetJS.events.conference.TRACK_MUTE_CHANGED, function(track) {
+            if (track.isAudioTrack()) {
+              onParticipantAudioMuteChanged(track.getParticipantId(), track.isMuted());
+            } else if (track.isVideoTrack()) {
+              onParticipantVideoMuteChanged(track.getParticipantId(), track.isMuted());
+            }
+          });
+          jc.addEventListener(JitsiMeetJS.events.conference.TRACK_ADDED, function(track) {
+            if (track.isAudioTrack()) {
+              onParticipantAudioTrackAdded(track.getParticipantId(), track);
+            } else if (track.isVideoTrack()) {
+              //onParticipantVideoTrackAdded(track.getParticipantId(), track);
+            }
+          });
+          jc.addEventListener(JitsiMeetJS.events.conference.TRACK_REMOVE, function(track) {
+            if (track.isAudioTrack()) {
+              onParticipantAudioTrackRemoved(track.getParticipantId(), track);
+            } else if (track.isVideoTrack()) {
+              //onParticipantVideoTrackRemoved(track.getParticipantId(), track);
+            }
+          });
+          jc.addEventListener(JitsiMeetJS.events.conference.PARTICIPANT_PROPERTY_CHANGED, function(participant, property_name, old_value, new_value) {
+            console.log("participant property changed", participant, property_name, old_value, new_value);
+            const participantId = (participant === null) ? getLocalParticipantID() : participant.getId();
+            if (property_name === "location") {
+              onParticipantLocationChanged(participantId, new_value.split(",").map(x=>+x));
+            } else if (property_name === "pa") {
+              onParticipantPAChanged(participantId, new_value === "true");
+            } else if (property_name === "omnilisten") {
+              onParticipantOmnilistenChanged(participantId, new_value === "true");
+            } else if (property_name === "raisedHand") {
+              onParticipantRaisedHandChanged(participantId, new_value === "true");
+            }
+          });
+          jc.addCommandListener('jitsi_force_participant_property', function(node, senderParticipantId, _jid) {
+            let participantId = node.attributes.participantId;
+            let name = node.attributes.name;
+            let value = node.value;
+            if (participantId === getLocalParticipantID()) {
+              let jc = getJitsiConference();
+              if (jc.getParticipantById(senderParticipantId).isModerator()) {
+                if (name === "location") { value = value.split(',').map(x=>+x); }
+                else { value = value === "true"; }
+                setParticipantProperty(participantId, name, value);
+              } else {
+                console.warn("non-moderator tried to force property change");
+              }
+            }
+          });
+          // call the basic callback
+          onConferenceJoined(roomName, id, displayName, avatarURL);
+        });
+        api.addListener('readyToClose', onConferenceReadyToBeClosed); // no JC equivalent
+        api.addListener('videoConferenceLeft', function(args) { // CONFERENCE_LEFT but this has parameters
+          let {roomName} = args;
+          onConferenceLeft(roomName);
+        });
+        api.addListener('participantJoined', function(args) { // USER_JOINED but that has second arg of JP
+          let {id, displayName} = args;
+          onParticipantJoined(id, displayName);
+        });
+        api.addListener('participantLeft', function(args) { // USER_LEFT but that has additional arg of JP
+          let {id} = args;
+          onParticipantLeft(id);
+        });
+        api.addListener('onAvatarChanged', function(args) { // no JC equivalent
+          let {id, avatarURL} = args;
+          onParticipantAvatarChanged(id, avatarURL);
+        });
+
+        /*
+        TODO:
+        MESSAGE_RECEIVED - new text message received. (parameters - id(string), text(string), ts(number))
+        ENDPOINT_MESSAGE_RECEIVED - notifies that a new message from another participant is received on a data channel.
+        STARTED_MUTED - notifies that the local user has started muted
+        track.getUsageLabel() === "desktop" for desktop video streams
+        api.addListener('filmstripDisplayChanged', onDisplayChanged_filmstrip); let {enabled} = args;
+        api.addListener('tileViewChanged', onDisplayChanged_tileview); let {enabled} = args;
+        toggleFilmStrip
+        toggleTileView
+        toggleChat
+        */
+      }
+      const api = new JitsiMeetExternalAPI('jitsi.coderforlife.com', {
+        roomName:'HelloWorld',
+        parentNode:document.getElementById("jitsi-meet"),
+        jwt:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJqaXRzaS1nYXRoZXIiLCJhdWQiOiJqaXRzaSIsInN1YiI6ImppdHNpLmNvZGVyZm9ybGlmZS5jb20iLCJyb29tIjoiSGVsbG9Xb3JsZCIsImV4cCI6MTYwOTQ1OTIwMCwiY29udGV4dCI6eyJpZCI6IjAxMjM0NTY4OSIsIm5hbWUiOiJNYXJrIE1vcnlrYW4iLCJlbWFpbCI6Im1vcnlrYW5tQG1vcmF2aWFuLmVkdSIsImF2YXRhciI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS8tWGRVSXFkTWtDV0EvQUFBQUFBQUFBQUkvQUFBQUFBQUFBQUEvVjhCTk9hZnRKbVlxcU15QktMcEltVS15MkNOdE5UTXFBQ0xjREVBRWlHUW9CVFJEX19fX19fX19fX184QkdPUGN0ZnpfX19fX193RS9zMTA1LXAtay1uby9waG90by5qcGcifX0.MYjaUGvJtgBfo8iA6oq-AIfbSQL06feT1selxO52pkM',
+        onload:onJitsiLoad
+      });
+    </script>
+  </body>
+</html>
